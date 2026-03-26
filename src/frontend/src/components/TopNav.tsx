@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -6,20 +5,40 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { FolderOpen, MessageSquare, Save, Trash2 } from "lucide-react";
+import {
+  FolderOpen,
+  Play,
+  RotateCcw,
+  Save,
+  Square,
+  Trash2,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import { useStudioStore } from "../store/studioStore";
 
 export default function TopNav() {
-  const { saveProject, getSavedProjects, loadProject, deleteProject } =
-    useStudioStore();
+  const {
+    saveProject,
+    getSavedProjects,
+    loadProject,
+    deleteProject,
+    isPlaying,
+    setIsPlaying,
+    setVisibleCount,
+  } = useStudioStore();
+  const { identity, clear } = useInternetIdentity();
   const [saveDialogOpen, setSaveDialogOpen] = useState(false);
   const [loadDialogOpen, setLoadDialogOpen] = useState(false);
   const [projectName, setProjectName] = useState("");
   const [projects, setProjects] = useState<Array<{ name: string; data: any }>>(
     [],
   );
+
+  const principalShort = identity
+    ? `${identity.getPrincipal().toString().slice(0, 5)}...`
+    : null;
 
   const handleSave = () => {
     if (!projectName.trim()) return;
@@ -46,88 +65,131 @@ export default function TopNav() {
     toast.success(`Deleted "${name}"`);
   };
 
+  const handlePlayStop = () => {
+    if (isPlaying) {
+      setIsPlaying(false);
+    } else {
+      setVisibleCount(0);
+      setIsPlaying(true);
+    }
+  };
+
+  const handleReset = () => {
+    setIsPlaying(false);
+    setVisibleCount(0);
+  };
+
   return (
     <header
       className="flex items-center justify-between px-5 h-14 border-b flex-shrink-0"
       style={{
-        background: "oklch(var(--studio-panel))",
+        background: "oklch(var(--studio-header))",
         borderColor: "oklch(var(--studio-border))",
       }}
       data-ocid="nav.section"
     >
-      {/* Brand */}
-      <div className="flex items-center gap-2.5">
-        <div
-          className="w-7 h-7 rounded-lg flex items-center justify-center"
-          style={{ background: "oklch(var(--studio-blue))" }}
-        >
-          <MessageSquare size={15} className="text-white" />
+      {/* Left: Brand + account pills */}
+      <div className="flex items-center gap-3">
+        <div className="flex flex-col leading-tight">
+          <span
+            className="font-bold"
+            style={{
+              fontSize: "18px",
+              color: "oklch(var(--studio-text))",
+              lineHeight: 1.2,
+            }}
+          >
+            iMessage Simulator
+          </span>
         </div>
-        <span
-          className="text-sm font-semibold"
-          style={{ color: "oklch(var(--studio-text))" }}
-        >
-          iMessage{" "}
-          <span style={{ color: "oklch(var(--studio-muted))" }}>Studio</span>
-        </span>
+        <div className="flex items-center gap-1.5 ml-1">
+          {principalShort && (
+            <button
+              type="button"
+              className="studio-pill-btn"
+              data-ocid="nav.secondary_button"
+              title={identity?.getPrincipal().toString()}
+            >
+              {principalShort}
+            </button>
+          )}
+          <button
+            type="button"
+            className="studio-pill-btn"
+            onClick={() => clear()}
+            data-ocid="nav.secondary_button"
+          >
+            Sign out
+          </button>
+        </div>
       </div>
 
-      {/* Center links */}
-      <nav className="hidden md:flex items-center gap-6">
-        {["App", "Features", "Pricing", "Docs"].map((link) => (
-          <a
-            key={link}
-            href="/"
-            className="text-sm font-medium transition-colors hover:opacity-100"
-            style={{ color: "oklch(var(--studio-muted))" }}
-            data-ocid="nav.link"
-          >
-            {link}
-          </a>
-        ))}
-      </nav>
-
-      {/* Right: actions */}
+      {/* Right: Play/Stop, Reset, Export, Save, Load */}
       <div className="flex items-center gap-2">
-        <Button
-          size="sm"
-          variant="ghost"
-          className="gap-1.5 text-xs"
-          onClick={() => setSaveDialogOpen(true)}
-          style={{ color: "oklch(var(--studio-muted))" }}
-          data-ocid="nav.save_button"
-        >
-          <Save size={13} />
-          Save
-        </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          className="gap-1.5 text-xs"
-          onClick={handleOpenLoad}
-          style={{ color: "oklch(var(--studio-muted))" }}
-          data-ocid="nav.open_modal_button"
-        >
-          <FolderOpen size={13} />
-          Load
-        </Button>
         <button
           type="button"
-          className="text-xs font-medium px-3 py-1.5 rounded-full transition-opacity hover:opacity-90"
+          onClick={handlePlayStop}
+          className="flex items-center gap-1.5 font-semibold px-4 py-1.5 rounded-full transition-opacity hover:opacity-90"
           style={{
-            background: "oklch(var(--primary))",
-            color: "oklch(var(--primary-foreground))",
+            background: isPlaying
+              ? "oklch(var(--studio-red))"
+              : "oklch(var(--studio-blue))",
+            color: "white",
+            fontSize: "12px",
           }}
           data-ocid="nav.primary_button"
         >
-          Upgrade to Pro
+          {isPlaying ? (
+            <>
+              <Square size={11} fill="white" />
+              Stop
+            </>
+          ) : (
+            <>
+              <Play size={11} fill="white" />
+              Play
+            </>
+          )}
         </button>
-        <div
-          className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold"
-          style={{ background: "oklch(var(--studio-blue))", color: "white" }}
+        <button
+          type="button"
+          onClick={handleReset}
+          className="studio-pill-btn flex items-center gap-1"
+          data-ocid="nav.button"
         >
-          U
-        </div>
+          <RotateCcw size={10} />
+          Reset
+        </button>
+        <button
+          type="button"
+          className="studio-pill-btn"
+          onClick={() => {
+            toast.info("Use the Export button in the Settings panel");
+          }}
+          data-ocid="nav.secondary_button"
+        >
+          Export
+        </button>
+        <button
+          type="button"
+          className="studio-pill-btn flex items-center gap-1"
+          onClick={() => setSaveDialogOpen(true)}
+          data-ocid="nav.save_button"
+          title="Save project"
+        >
+          <Save size={10} />
+          Save
+        </button>
+        <button
+          type="button"
+          className="studio-pill-btn flex items-center gap-1"
+          onClick={handleOpenLoad}
+          data-ocid="nav.open_modal_button"
+          title="Load project"
+        >
+          <FolderOpen size={10} />
+          Load
+        </button>
       </div>
 
       {/* Save Dialog */}
@@ -159,18 +221,20 @@ export default function TopNav() {
               }}
               data-ocid="save.input"
             />
-            <Button
-              className="w-full"
+            <button
+              type="button"
+              className="w-full py-2 rounded-lg text-sm font-medium"
               onClick={handleSave}
               disabled={!projectName.trim()}
               style={{
                 background: "oklch(var(--studio-blue))",
                 color: "white",
+                opacity: projectName.trim() ? 1 : 0.4,
               }}
               data-ocid="save.submit_button"
             >
               Save
-            </Button>
+            </button>
           </div>
         </DialogContent>
       </Dialog>
@@ -219,18 +283,18 @@ export default function TopNav() {
                       {project.name}
                     </span>
                     <div className="flex gap-1">
-                      <Button
-                        size="sm"
-                        variant="ghost"
+                      <button
+                        type="button"
+                        className="text-xs px-2 py-1 rounded"
                         onClick={() => handleLoad(project.data)}
                         style={{ color: "oklch(var(--studio-blue))" }}
                         data-ocid={`load.primary_button.${i + 1}`}
                       >
                         Load
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
+                      </button>
+                      <button
+                        type="button"
+                        className="text-xs px-2 py-1 rounded hover:bg-white/10"
                         onClick={() => handleDelete(project.name)}
                         data-ocid={`load.delete_button.${i + 1}`}
                       >
@@ -238,7 +302,7 @@ export default function TopNav() {
                           size={13}
                           style={{ color: "oklch(var(--destructive))" }}
                         />
-                      </Button>
+                      </button>
                     </div>
                   </div>
                 ))

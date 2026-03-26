@@ -1,61 +1,66 @@
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
-import { useRef } from "react";
+import { ChevronDown } from "lucide-react";
+import { useRef, useState } from "react";
 import { useStudioStore } from "../../store/studioStore";
 import ExportModal from "../ExportModal";
 
-function Card({
-  title,
-  children,
-}: { title: string; children: React.ReactNode }) {
+function SectionHeader({ label }: { label: string }) {
   return (
-    <div
-      className="rounded-xl p-4 space-y-3"
-      style={{
-        background: "oklch(var(--studio-panel))",
-        border: "1px solid oklch(var(--studio-border))",
-      }}
-    >
-      <h3
-        className="text-sm font-semibold"
-        style={{ color: "oklch(var(--studio-text))" }}
-      >
-        {title}
-      </h3>
-      {children}
+    <div className="px-4 pt-4 pb-2">
+      <span className="studio-section-label">{label}</span>
     </div>
   );
 }
 
 function SettingRow({
   label,
+  sub,
   children,
-}: { label: string; children: React.ReactNode }) {
+}: {
+  label: string;
+  sub?: string;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="flex items-center justify-between gap-3">
-      <span
-        className="text-xs font-medium"
-        style={{ color: "oklch(var(--studio-muted))" }}
-      >
-        {label}
-      </span>
-      {children}
+    <div
+      className="flex items-center justify-between gap-3 px-4 py-2.5 border-b"
+      style={{ borderColor: "oklch(var(--studio-border))" }}
+    >
+      <div className="flex flex-col min-w-0">
+        <span
+          className="text-xs font-medium"
+          style={{ color: "oklch(var(--studio-secondary))", fontSize: "12px" }}
+        >
+          {label}
+        </span>
+        {sub && (
+          <span
+            className="text-xs mt-0.5"
+            style={{ color: "oklch(var(--studio-muted))", fontSize: "10px" }}
+          >
+            {sub}
+          </span>
+        )}
+      </div>
+      <div className="flex-shrink-0">{children}</div>
     </div>
+  );
+}
+
+function Divider() {
+  return (
+    <div
+      className="h-px mx-0"
+      style={{ background: "oklch(var(--studio-border))" }}
+    />
   );
 }
 
 export default function SettingsPanel() {
   const { settings, updateSettings } = useStudioStore();
   const avatarInputRef = useRef<HTMLInputElement>(null);
-
-  const inputStyle = {
-    background: "oklch(var(--studio-surface))",
-    borderColor: "oklch(var(--studio-border))",
-    color: "oklch(var(--studio-text))",
-    fontSize: "12px",
-  };
+  const [audioOpen, setAudioOpen] = useState(false);
 
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -70,25 +75,32 @@ export default function SettingsPanel() {
 
   const speedOptions = [0.5, 0.75, 1, 1.5, 2];
 
+  const receiptOptions: Array<{
+    key: "none" | "delivered" | "read";
+    label: string;
+  }> = [
+    { key: "none", label: "None" },
+    { key: "delivered", label: "Delivered" },
+    { key: "read", label: "Read + Time" },
+  ];
+
   return (
-    <div className="flex flex-col gap-3 p-3">
-      <div className="pt-1 pb-0.5 px-1">
-        <h2
-          className="text-sm font-semibold"
-          style={{ color: "oklch(var(--studio-text))" }}
-        >
-          Simulator Settings
-        </h2>
-      </div>
+    <div className="flex flex-col">
+      <SectionHeader label="Settings" />
+      <Divider />
 
       {/* Contact */}
-      <Card title="Contact Info">
-        <div className="flex items-center gap-3">
+      <SettingRow label="Contact" sub="Status bar name">
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => avatarInputRef.current?.click()}
-            className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center text-sm font-bold transition-opacity hover:opacity-80"
-            style={{ background: "oklch(var(--studio-blue))", color: "white" }}
+            className="w-6 h-6 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center text-xs font-bold transition-opacity hover:opacity-80"
+            style={{
+              background: "oklch(var(--studio-blue))",
+              color: "white",
+              fontSize: "10px",
+            }}
             title="Upload avatar"
             data-ocid="settings.upload_button"
           >
@@ -109,33 +121,34 @@ export default function SettingsPanel() {
             className="hidden"
             onChange={handleAvatarUpload}
           />
-          <div className="flex-1">
-            <Input
-              value={settings.contactName}
-              onChange={(e) => updateSettings({ contactName: e.target.value })}
-              placeholder="Contact name"
-              style={inputStyle}
-              className="h-8 text-xs"
-              data-ocid="settings.input"
-            />
-          </div>
+          <input
+            type="text"
+            value={settings.contactName}
+            onChange={(e) => updateSettings({ contactName: e.target.value })}
+            className="bg-transparent text-xs outline-none w-24 text-right"
+            style={{ color: "oklch(var(--studio-blue))", fontSize: "12px" }}
+            data-ocid="settings.input"
+          />
         </div>
-      </Card>
+      </SettingRow>
 
       {/* Time */}
-      <Card title="Status Bar">
-        <SettingRow label="Time">
+      <SettingRow label="Time" sub="Status bar clock &amp; badge">
+        <div className="flex items-center gap-1.5">
           <input
             type="text"
             value={settings.statusBarTime}
             onChange={(e) => updateSettings({ statusBarTime: e.target.value })}
-            className="w-20 text-center rounded-md px-2 py-1 text-xs"
-            style={inputStyle}
+            className="text-center rounded-md px-2 py-1 text-xs w-14"
+            style={{
+              background: "oklch(var(--studio-surface))",
+              border: "1px solid oklch(var(--studio-border))",
+              color: "oklch(var(--studio-text))",
+              fontSize: "11px",
+            }}
             maxLength={8}
             data-ocid="settings.input"
           />
-        </SettingRow>
-        <SettingRow label="Badge Count">
           <input
             type="number"
             value={settings.notificationBadge}
@@ -144,178 +157,262 @@ export default function SettingsPanel() {
                 notificationBadge: Math.min(99, Math.max(0, +e.target.value)),
               })
             }
-            className="w-20 text-center rounded-md px-2 py-1 text-xs"
-            style={inputStyle}
+            className="text-center rounded-md px-2 py-1 text-xs w-12"
+            style={{
+              background: "oklch(var(--studio-surface))",
+              border: "1px solid oklch(var(--studio-border))",
+              color: "oklch(var(--studio-text))",
+              fontSize: "11px",
+            }}
             min={0}
             max={99}
+            placeholder="0"
             data-ocid="settings.input"
           />
-        </SettingRow>
-      </Card>
-
-      {/* Message Settings */}
-      <Card title="Message Settings">
-        <div className="space-y-1.5">
-          <Label
-            className="text-xs"
-            style={{ color: "oklch(var(--studio-muted))" }}
-          >
-            Read Receipt
-          </Label>
-          <div className="flex gap-1">
-            {(["none", "delivered", "read"] as const).map((opt) => (
-              <button
-                type="button"
-                key={opt}
-                onClick={() => updateSettings({ readReceipt: opt })}
-                className="flex-1 text-xs py-1.5 rounded-md font-medium capitalize transition-colors"
-                style={{
-                  background:
-                    settings.readReceipt === opt
-                      ? "oklch(var(--studio-blue))"
-                      : "oklch(var(--studio-surface))",
-                  color:
-                    settings.readReceipt === opt
-                      ? "white"
-                      : "oklch(var(--studio-muted))",
-                  border: "1px solid oklch(var(--studio-border))",
-                }}
-                data-ocid="settings.toggle"
-              >
-                {opt === "read"
-                  ? "Read"
-                  : opt.charAt(0).toUpperCase() + opt.slice(1)}
-              </button>
-            ))}
-          </div>
         </div>
-      </Card>
+      </SettingRow>
+
+      {/* Receipt */}
+      <SettingRow label="Receipt" sub="Status under last sent msg">
+        <div className="flex gap-0.5">
+          {receiptOptions.map((opt) => (
+            <button
+              type="button"
+              key={opt.key}
+              onClick={() => updateSettings({ readReceipt: opt.key })}
+              className="text-xs px-2 py-1 rounded-md font-medium transition-colors"
+              style={{
+                background:
+                  settings.readReceipt === opt.key
+                    ? "oklch(var(--studio-blue))"
+                    : "oklch(var(--studio-surface))",
+                color:
+                  settings.readReceipt === opt.key
+                    ? "white"
+                    : "oklch(var(--studio-muted))",
+                border: "1px solid oklch(var(--studio-border))",
+                fontSize: "10px",
+              }}
+              data-ocid="settings.toggle"
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </SettingRow>
 
       {/* Theme */}
-      <Card title="Theme">
-        <SettingRow label="iPhone Dark Mode">
-          <Switch
-            checked={settings.darkMode}
-            onCheckedChange={(v) => updateSettings({ darkMode: v })}
-            data-ocid="settings.switch"
-          />
-        </SettingRow>
-        <SettingRow label="Green Bubbles (SMS)">
-          <Switch
-            checked={settings.greenBubbles}
-            onCheckedChange={(v) => updateSettings({ greenBubbles: v })}
-            data-ocid="settings.switch"
-          />
-        </SettingRow>
-      </Card>
+      <SettingRow label="Theme" sub="Dark">
+        <Switch
+          checked={settings.darkMode}
+          onCheckedChange={(v) => updateSettings({ darkMode: v })}
+          data-ocid="settings.switch"
+        />
+      </SettingRow>
 
-      {/* Animation */}
-      <Card title="Animation">
-        <SettingRow label="Autoplay on Load">
-          <Switch
-            checked={settings.autoplay}
-            onCheckedChange={(v) => updateSettings({ autoplay: v })}
-            data-ocid="settings.switch"
-          />
-        </SettingRow>
-      </Card>
+      {/* Green */}
+      <SettingRow label="Green" sub="SMS-style green bubbles">
+        <Switch
+          checked={settings.greenBubbles}
+          onCheckedChange={(v) => updateSettings({ greenBubbles: v })}
+          data-ocid="settings.switch"
+        />
+      </SettingRow>
 
-      {/* Timing */}
-      <Card title="Timing">
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <SettingRow label="Message Delay">
-              <span
-                className="text-xs font-mono"
-                style={{ color: "oklch(var(--studio-blue))" }}
-              >
-                {settings.messageDelay}ms
-              </span>
-            </SettingRow>
-            <Slider
-              min={0}
-              max={2000}
-              step={50}
-              value={[settings.messageDelay]}
-              onValueChange={([v]) => updateSettings({ messageDelay: v })}
-              data-ocid="settings.toggle"
-            />
-          </div>
-          <div className="space-y-2">
-            <SettingRow label="Typing Duration">
-              <span
-                className="text-xs font-mono"
-                style={{ color: "oklch(var(--studio-blue))" }}
-              >
-                {settings.typingDuration}ms
-              </span>
-            </SettingRow>
-            <Slider
-              min={0}
-              max={3000}
-              step={100}
-              value={[settings.typingDuration]}
-              onValueChange={([v]) => updateSettings({ typingDuration: v })}
-            />
-          </div>
-          <div className="space-y-2">
-            <SettingRow label="Call Banner">
-              <span
-                className="text-xs font-mono"
-                style={{ color: "oklch(var(--studio-blue))" }}
-              >
-                {settings.callBannerDuration}ms
-              </span>
-            </SettingRow>
-            <Slider
-              min={0}
-              max={5000}
-              step={100}
-              value={[settings.callBannerDuration]}
-              onValueChange={([v]) => updateSettings({ callBannerDuration: v })}
-            />
-          </div>
+      {/* Autoplay */}
+      <SettingRow label="Autoplay" sub="Auto-play video messages">
+        <Switch
+          checked={settings.autoplay}
+          onCheckedChange={(v) => updateSettings({ autoplay: v })}
+          data-ocid="settings.switch"
+        />
+      </SettingRow>
 
-          {/* Playback speed */}
-          <div className="space-y-2">
-            <Label
-              className="text-xs"
-              style={{ color: "oklch(var(--studio-muted))" }}
-            >
-              Playback Speed
-            </Label>
-            <div className="flex gap-1">
-              {speedOptions.map((s) => (
-                <button
-                  type="button"
-                  key={s}
-                  onClick={() => updateSettings({ playbackSpeed: s })}
-                  className="flex-1 text-xs py-1.5 rounded-md font-medium transition-colors"
-                  style={{
-                    background:
-                      settings.playbackSpeed === s
-                        ? "oklch(var(--studio-blue))"
-                        : "oklch(var(--studio-surface))",
-                    color:
-                      settings.playbackSpeed === s
-                        ? "white"
-                        : "oklch(var(--studio-muted))",
-                    border: "1px solid oklch(var(--studio-border))",
-                  }}
-                  data-ocid="settings.toggle"
-                >
-                  {s}x
-                </button>
-              ))}
-            </div>
-          </div>
+      {/* TIMING SECTION */}
+      <SectionHeader label="Timing" />
+      <Divider />
+
+      {/* Msg delay slider */}
+      <div
+        className="px-4 py-3 border-b"
+        style={{ borderColor: "oklch(var(--studio-border))" }}
+      >
+        <div className="flex items-center justify-between mb-2">
+          <span
+            className="text-xs"
+            style={{
+              color: "oklch(var(--studio-secondary))",
+              fontSize: "12px",
+            }}
+          >
+            Msg
+          </span>
+          <span
+            className="text-xs font-mono"
+            style={{ color: "oklch(var(--studio-blue))", fontSize: "11px" }}
+          >
+            {settings.messageDelay}ms
+          </span>
         </div>
-      </Card>
+        <Slider
+          min={0}
+          max={2000}
+          step={50}
+          value={[settings.messageDelay]}
+          onValueChange={([v]) => updateSettings({ messageDelay: v })}
+          data-ocid="settings.toggle"
+        />
+      </div>
+
+      {/* Typing slider */}
+      <div
+        className="px-4 py-3 border-b"
+        style={{ borderColor: "oklch(var(--studio-border))" }}
+      >
+        <div className="flex items-center justify-between mb-2">
+          <span
+            className="text-xs"
+            style={{
+              color: "oklch(var(--studio-secondary))",
+              fontSize: "12px",
+            }}
+          >
+            Typing
+          </span>
+          <span
+            className="text-xs font-mono"
+            style={{ color: "oklch(var(--studio-blue))", fontSize: "11px" }}
+          >
+            {settings.typingDuration}ms
+          </span>
+        </div>
+        <Slider
+          min={0}
+          max={3000}
+          step={100}
+          value={[settings.typingDuration]}
+          onValueChange={([v]) => updateSettings({ typingDuration: v })}
+        />
+      </div>
+
+      {/* Call slider */}
+      <div
+        className="px-4 py-3 border-b"
+        style={{ borderColor: "oklch(var(--studio-border))" }}
+      >
+        <div className="flex items-center justify-between mb-2">
+          <span
+            className="text-xs"
+            style={{
+              color: "oklch(var(--studio-secondary))",
+              fontSize: "12px",
+            }}
+          >
+            Call
+          </span>
+          <span
+            className="text-xs font-mono"
+            style={{ color: "oklch(var(--studio-blue))", fontSize: "11px" }}
+          >
+            {(settings.callBannerDuration / 1000).toFixed(1)}s
+          </span>
+        </div>
+        <Slider
+          min={0}
+          max={5000}
+          step={100}
+          value={[settings.callBannerDuration]}
+          onValueChange={([v]) => updateSettings({ callBannerDuration: v })}
+        />
+      </div>
+
+      {/* Speed segmented */}
+      <div
+        className="px-4 py-3 border-b"
+        style={{ borderColor: "oklch(var(--studio-border))" }}
+      >
+        <div className="flex items-center justify-between mb-2">
+          <span
+            className="text-xs"
+            style={{
+              color: "oklch(var(--studio-secondary))",
+              fontSize: "12px",
+            }}
+          >
+            Speed
+          </span>
+        </div>
+        <div className="flex gap-1">
+          {speedOptions.map((s) => (
+            <button
+              type="button"
+              key={s}
+              onClick={() => updateSettings({ playbackSpeed: s })}
+              className="flex-1 text-xs py-1.5 rounded-md font-medium transition-colors"
+              style={{
+                background:
+                  settings.playbackSpeed === s
+                    ? "oklch(var(--studio-blue))"
+                    : "oklch(var(--studio-surface))",
+                color:
+                  settings.playbackSpeed === s
+                    ? "white"
+                    : "oklch(var(--studio-muted))",
+                border: "1px solid oklch(var(--studio-border))",
+                fontSize: "11px",
+              }}
+              data-ocid="settings.toggle"
+            >
+              {s}x
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* AUDIO SECTION */}
+      <div
+        className="border-b"
+        style={{ borderColor: "oklch(var(--studio-border))" }}
+      >
+        <button
+          type="button"
+          onClick={() => setAudioOpen(!audioOpen)}
+          className="w-full flex items-center justify-between px-4 py-3 transition-colors hover:bg-white/[0.03]"
+        >
+          <span className="studio-section-label">Audio</span>
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={audioOpen}
+              onCheckedChange={setAudioOpen}
+              onClick={(e) => e.stopPropagation()}
+              data-ocid="settings.switch"
+            />
+            <ChevronDown
+              size={12}
+              style={{
+                color: "oklch(var(--studio-muted))",
+                transform: audioOpen ? "rotate(180deg)" : "none",
+                transition: "transform 150ms ease",
+              }}
+            />
+          </div>
+        </button>
+        {audioOpen && (
+          <div
+            className="px-4 pb-3 text-xs"
+            style={{ color: "oklch(var(--studio-muted))" }}
+          >
+            Audio settings coming soon.
+          </div>
+        )}
+      </div>
 
       {/* Export */}
-      <ExportModal />
+      <div className="px-4 py-3">
+        <ExportModal />
+      </div>
 
-      <div className="pb-2" />
+      <div className="pb-4" />
     </div>
   );
 }

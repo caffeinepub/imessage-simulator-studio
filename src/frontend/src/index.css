@@ -6,83 +6,91 @@
 
 @layer base {
   :root {
-    --radius: 0.75rem;
-    /* Dark-mode-first palette (studio is always dark) */
-    --background: 0.09 0.008 265;
-    --foreground: 0.93 0.015 255;
-    --card: 0.16 0.01 255;
-    --card-foreground: 0.93 0.015 255;
-    --popover: 0.18 0.012 255;
-    --popover-foreground: 0.93 0.015 255;
-    --primary: 0.96 0.006 255;
-    --primary-foreground: 0.1 0.008 255;
-    --secondary: 0.18 0.012 255;
-    --secondary-foreground: 0.93 0.015 255;
-    --muted: 0.18 0.012 255;
-    --muted-foreground: 0.67 0.016 250;
-    --accent: 0.21 0.014 255;
-    --accent-foreground: 0.93 0.015 255;
-    --destructive: 0.62 0.22 25;
+    --radius: 0.5rem;
+    /* Dark-mode-first palette */
+    --background: 0.07 0.004 265;
+    --foreground: 0.94 0.006 265;
+    --card: 0.15 0.006 265;
+    --card-foreground: 0.94 0.006 265;
+    --popover: 0.15 0.006 265;
+    --popover-foreground: 0.94 0.006 265;
+    --primary: 0.94 0.006 265;
+    --primary-foreground: 0.1 0.004 265;
+    --secondary: 0.19 0.008 265;
+    --secondary-foreground: 0.94 0.006 265;
+    --muted: 0.19 0.008 265;
+    --muted-foreground: 0.52 0.012 255;
+    --accent: 0.21 0.006 265;
+    --accent-foreground: 0.94 0.006 265;
+    --destructive: 0.62 0.24 25;
     --destructive-foreground: 0.97 0 0;
-    --border: 0.23 0.014 255;
-    --input: 0.18 0.012 255;
-    --ring: 0.57 0.22 259;
-    --chart-1: 0.57 0.22 259;
+    --border: 0.24 0.01 265;
+    --input: 0.19 0.008 265;
+    --ring: 0.59 0.22 250;
+    --chart-1: 0.59 0.22 250;
     --chart-2: 0.73 0.18 145;
-    --chart-3: 0.67 0.016 250;
-    --chart-4: 0.77 0.012 250;
-    --chart-5: 0.62 0.22 25;
-    --sidebar: 0.12 0.008 265;
-    --sidebar-foreground: 0.93 0.015 255;
-    --sidebar-primary: 0.57 0.22 259;
+    --chart-3: 0.52 0.012 255;
+    --chart-4: 0.72 0.01 260;
+    --chart-5: 0.62 0.24 25;
+    --sidebar: 0.11 0.004 265;
+    --sidebar-foreground: 0.94 0.006 265;
+    --sidebar-primary: 0.59 0.22 250;
     --sidebar-primary-foreground: 0.97 0 0;
-    --sidebar-accent: 0.18 0.012 255;
-    --sidebar-accent-foreground: 0.93 0.015 255;
-    --sidebar-border: 0.23 0.014 255;
-    --sidebar-ring: 0.57 0.22 259;
+    --sidebar-accent: 0.19 0.008 265;
+    --sidebar-accent-foreground: 0.94 0.006 265;
+    --sidebar-border: 0.24 0.01 265;
+    --sidebar-ring: 0.59 0.22 250;
 
     /* Studio-specific tokens */
-    --studio-bg: 0.09 0.008 265;
-    --studio-panel: 0.16 0.01 255;
-    --studio-surface: 0.18 0.012 255;
-    --studio-border: 0.23 0.014 255;
-    --studio-text: 0.93 0.015 255;
-    --studio-muted: 0.67 0.016 250;
-    --studio-pill: 0.21 0.014 255;
-    --studio-blue: 0.57 0.22 259;
-    --studio-gray-bubble: 0.28 0.008 255;
+    --studio-bg: 0.07 0.004 265;
+    --studio-panel: 0.15 0.006 265;
+    --studio-surface: 0.19 0.008 265;
+    --studio-border: 0.24 0.01 265;
+    --studio-header: 0.11 0.004 265;
+    --studio-text: 0.94 0.006 265;
+    --studio-secondary: 0.72 0.01 260;
+    --studio-muted: 0.52 0.012 255;
+    --studio-pill: 0.21 0.006 265;
+    --studio-blue: 0.59 0.22 250;
+    --studio-blue-chip: 0.41 0.14 250;
+    --studio-red: 0.62 0.24 25;
     --studio-green: 0.73 0.18 145;
-    --studio-dots: 0.77 0.012 250;
+    --studio-green-chip: 0.47 0.14 155;
+    --studio-gray-bubble: 0.24 0.008 265;
+    --studio-dots: 0.72 0.01 260;
+    --studio-neutral-btn: 0.21 0.006 265;
+    --studio-purple-from: 0.18 0.08 310;
+    --studio-purple-to: 0.23 0.1 310;
   }
 
   .dark {
-    --background: 0.09 0.008 265;
-    --foreground: 0.93 0.015 255;
-    --card: 0.16 0.01 255;
-    --card-foreground: 0.93 0.015 255;
-    --popover: 0.18 0.012 255;
-    --popover-foreground: 0.93 0.015 255;
-    --primary: 0.96 0.006 255;
-    --primary-foreground: 0.1 0.008 255;
-    --secondary: 0.18 0.012 255;
-    --secondary-foreground: 0.93 0.015 255;
-    --muted: 0.18 0.012 255;
-    --muted-foreground: 0.67 0.016 250;
-    --accent: 0.21 0.014 255;
-    --accent-foreground: 0.93 0.015 255;
-    --destructive: 0.62 0.22 25;
+    --background: 0.07 0.004 265;
+    --foreground: 0.94 0.006 265;
+    --card: 0.15 0.006 265;
+    --card-foreground: 0.94 0.006 265;
+    --popover: 0.15 0.006 265;
+    --popover-foreground: 0.94 0.006 265;
+    --primary: 0.94 0.006 265;
+    --primary-foreground: 0.1 0.004 265;
+    --secondary: 0.19 0.008 265;
+    --secondary-foreground: 0.94 0.006 265;
+    --muted: 0.19 0.008 265;
+    --muted-foreground: 0.52 0.012 255;
+    --accent: 0.21 0.006 265;
+    --accent-foreground: 0.94 0.006 265;
+    --destructive: 0.62 0.24 25;
     --destructive-foreground: 0.97 0 0;
-    --border: 0.23 0.014 255;
-    --input: 0.18 0.012 255;
-    --ring: 0.57 0.22 259;
-    --sidebar: 0.12 0.008 265;
-    --sidebar-foreground: 0.93 0.015 255;
-    --sidebar-primary: 0.57 0.22 259;
+    --border: 0.24 0.01 265;
+    --input: 0.19 0.008 265;
+    --ring: 0.59 0.22 250;
+    --sidebar: 0.11 0.004 265;
+    --sidebar-foreground: 0.94 0.006 265;
+    --sidebar-primary: 0.59 0.22 250;
     --sidebar-primary-foreground: 0.97 0 0;
-    --sidebar-accent: 0.18 0.012 255;
-    --sidebar-accent-foreground: 0.93 0.015 255;
-    --sidebar-border: 0.23 0.014 255;
-    --sidebar-ring: 0.57 0.22 259;
+    --sidebar-accent: 0.19 0.008 265;
+    --sidebar-accent-foreground: 0.94 0.006 265;
+    --sidebar-border: 0.24 0.01 265;
+    --sidebar-ring: 0.59 0.22 250;
   }
 
   * {
@@ -96,7 +104,6 @@
     color-scheme: dark;
   }
 
-  /* Custom scrollbar */
   ::-webkit-scrollbar {
     width: 4px;
     height: 4px;
@@ -123,9 +130,9 @@
     background: oklch(var(--studio-surface));
     border: 1px solid oklch(var(--studio-border));
     color: oklch(var(--studio-text));
-    border-radius: 8px;
-    padding: 6px 10px;
-    font-size: 13px;
+    border-radius: 6px;
+    padding: 5px 8px;
+    font-size: 12px;
     transition: border-color 200ms ease;
   }
   .studio-input:focus {
@@ -134,5 +141,26 @@
   }
   .studio-input::placeholder {
     color: oklch(var(--studio-muted));
+  }
+  .studio-section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: oklch(var(--studio-muted));
+  }
+  .studio-pill-btn {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 10px;
+    border-radius: 9999px;
+    background: oklch(var(--studio-neutral-btn));
+    border: 1px solid oklch(var(--studio-border));
+    color: oklch(var(--studio-secondary));
+    transition: opacity 150ms ease;
+    cursor: pointer;
+  }
+  .studio-pill-btn:hover {
+    opacity: 0.85;
   }
 }
