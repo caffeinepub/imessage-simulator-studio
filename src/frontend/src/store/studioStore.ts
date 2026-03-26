@@ -6,6 +6,7 @@ export interface Message {
   sender: "me" | "them";
   type: "message" | "timestamp" | "call";
   text: string;
+  imageUrl?: string;
 }
 
 export interface Settings {
@@ -199,6 +200,7 @@ interface StudioStore {
   ) => void;
   updateMessage: (id: string, text: string) => void;
   deleteMessage: (id: string) => void;
+  updateMessageImage: (id: string, imageUrl: string | null) => void;
   duplicateMessage: (id: string) => void;
   reorderMessages: (oldIndex: number, newIndex: number) => void;
   toggleSender: (id: string) => void;
@@ -252,6 +254,13 @@ export const useStudioStore = create<StudioStore>()(
 
       deleteMessage: (id) =>
         set((s) => ({ messages: s.messages.filter((m) => m.id !== id) })),
+
+      updateMessageImage: (id, imageUrl) =>
+        set((s) => ({
+          messages: s.messages.map((m) =>
+            m.id === id ? { ...m, imageUrl: imageUrl ?? undefined } : m,
+          ),
+        })),
 
       duplicateMessage: (id) =>
         set((s) => {

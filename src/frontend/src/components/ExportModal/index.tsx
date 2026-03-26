@@ -132,6 +132,24 @@ export default function ExportModal() {
       let inputText = "";
       let activeKey = "";
 
+      // Preload all message images
+      await Promise.all(
+        messages
+          .filter((m) => m.imageUrl)
+          .map(
+            (m) =>
+              new Promise<void>((resolve) => {
+                const img = new window.Image();
+                img.onload = () => {
+                  preloadedImages.set(m.id, img);
+                  resolve();
+                };
+                img.onerror = () => resolve();
+                img.src = m.imageUrl!;
+              }),
+          ),
+      );
+
       const rr = (
         x: number,
         y: number,
@@ -163,6 +181,10 @@ export default function ExportModal() {
         if (line) lines.push(line);
         return lines.length ? lines : [""];
       };
+
+      // Preloaded images map (populated async)
+      const preloadedImages = new Map<string, HTMLImageElement>();
+      const IMG_H = 200; // canvas units for image in bubble
 
       const drawFrame = () => {
         const grad = ctx.createLinearGradient(0, 0, 0, CH);
@@ -278,8 +300,16 @@ export default function ExportModal() {
 
         const msgHeights = visibleMsgs.map((msg) => {
           if (msg.type === "timestamp") return 40 + MSG_GAP;
-          const lines = wrapText(msg.text || " ", MAX_W - PAD_H * 2, MSG_FONT);
-          return lines.length * LINE_H + PAD_V * 2 + MSG_GAP;
+          const hasImage = !!msg.imageUrl;
+          const hasText = !!msg.text;
+          const lines = hasText
+            ? wrapText(msg.text, MAX_W - PAD_H * 2, MSG_FONT)
+            : [];
+          const textH = lines.length > 0 ? lines.length * LINE_H : 0;
+          if (hasImage) {
+            return IMG_H + (hasText ? textH + PAD_V : 0) + PAD_V * 2 + MSG_GAP;
+          }
+          return (hasText ? lines.length : 1) * LINE_H + PAD_V * 2 + MSG_GAP;
         });
         const totalMsgH = msgHeights.reduce((a, b) => a + b, 0);
         const dotH = showTypingDots ? 50 + MSG_GAP : 0;
@@ -309,30 +339,71 @@ export default function ExportModal() {
           const isMe = msg.sender === "me";
           const color = isMe ? BUBBLE_ME : BUBBLE_THEM;
           const tColor = isMe ? "white" : TEXT_THEM;
-          const lines = wrapText(msg.text || " ", MAX_W - PAD_H * 2, MSG_FONT);
-          ctx.font = MSG_FONT;
-          let maxLW = 0;
-          for (const l of lines) {
-            const w = ctx.measureText(l).width;
-            if (w > maxLW) maxLW = w;
-          }
-          const bW = Math.min(MAX_W, maxLW + PAD_H * 2);
-          const bH = lines.length * LINE_H + PAD_V * 2;
-          const bX = isMe ? SC_X + SC_W - SIDE - bW : SC_X + SIDE;
+          const hasImage = !!msg.imageUrl;
+          const hasText = !!msg.text;
+          const lines = hasText
+            ? wrapText(msg.text, MAX_W - PAD_H * 2, MSG_FONT)
+            : [];
           const bR = isMe ? [18, 18, 4, 18] : [18, 18, 18, 4];
 
-          rr(bX, y, bW, bH, bR, color);
+          if (hasImage && !hasText) {
+            // Image-only: draw image with rounded corners, no background
+            const imgEl = preloadedImages.get(msg.id);
+            const imgW = MAX_W;
+            const bX = isMe ? SC_X + SC_W - SIDE - imgW : SC_X + SIDE;
+            if (imgEl) {
+              ctx.save();
+              ctx.beginPath();
+              ctx.roundRect(bX, y, imgW, IMG_H, bR);
+              ctx.clip();
+              ctx.drawImage(imgEl, bX, y, imgW, IMG_H);
+              ctx.restore();
+            } else {
+              rr(bX, y, imgW, IMG_H, bR, color);
+            }
+          } else {
+            ctx.font = MSG_FONT;
+            let maxLW = 0;
+            for (const l of lines) {
+              const w = ctx.measureText(l).width;
+              if (w > maxLW) maxLW = w;
+            }
+            const bW = hasImage ? MAX_W : Math.min(MAX_W, maxLW + PAD_H * 2);
+            const imgPartH = hasImage ? IMG_H + PAD_V : 0;
+            const textPartH =
+              lines.length > 0 ? lines.length * LINE_H + PAD_V * 2 : PAD_V * 2;
+            const bH = hasImage ? imgPartH + textPartH : textPartH;
+            const bX = isMe ? SC_X + SC_W - SIDE - bW : SC_X + SIDE;
 
-          ctx.fillStyle = tColor;
-          ctx.font = MSG_FONT;
-          ctx.textAlign = "left";
-          ctx.textBaseline = "alphabetic";
-          for (let li = 0; li < lines.length; li++) {
-            ctx.fillText(
-              lines[li],
-              bX + PAD_H,
-              y + PAD_V + (li + 1) * LINE_H - 8,
-            );
+            rr(bX, y, bW, bH, bR, color);
+
+            if (hasImage) {
+              const imgEl = preloadedImages.get(msg.id);
+              if (imgEl) {
+                ctx.save();
+                ctx.beginPath();
+                const imgBR = isMe ? [18, 18, 0, 18] : [18, 18, 18, 0];
+                ctx.roundRect(bX, y, bW, IMG_H, imgBR);
+                ctx.clip();
+                ctx.drawImage(imgEl, bX, y, bW, IMG_H);
+                ctx.restore();
+              }
+            }
+
+            if (hasText) {
+              ctx.fillStyle = tColor;
+              ctx.font = MSG_FONT;
+              ctx.textAlign = "left";
+              ctx.textBaseline = "alphabetic";
+              const textStartY = y + imgPartH + PAD_V;
+              for (let li = 0; li < lines.length; li++) {
+                ctx.fillText(
+                  lines[li],
+                  bX + PAD_H,
+                  textStartY + (li + 1) * LINE_H - 8,
+                );
+              }
+            }
           }
 
           y += msgHeights[mi];

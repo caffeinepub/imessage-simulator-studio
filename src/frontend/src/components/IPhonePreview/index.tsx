@@ -432,6 +432,9 @@ function MessageBubble({
     );
   }
 
+  const borderRadius =
+    msg.sender === "me" ? "18px 18px 4px 18px" : "18px 18px 18px 4px";
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10, scale: 0.97 }}
@@ -441,18 +444,47 @@ function MessageBubble({
         msg.sender === "me" ? "items-end" : "items-start"
       }`}
     >
-      <div
-        className="max-w-[75%] px-3 py-2 text-xs leading-relaxed"
-        style={{
-          background: bubbleColor,
-          color: textColor,
-          borderRadius:
-            msg.sender === "me" ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
-          wordBreak: "break-word",
-        }}
-      >
-        {msg.text || <span style={{ opacity: 0.4 }}>empty</span>}
-      </div>
+      {msg.imageUrl && !msg.text ? (
+        // Image-only bubble
+        <img
+          src={msg.imageUrl}
+          alt=""
+          style={{
+            maxWidth: "75%",
+            maxHeight: "120px",
+            borderRadius,
+            objectFit: "cover",
+            display: "block",
+          }}
+        />
+      ) : (
+        <div
+          className="max-w-[75%] px-3 py-2 text-xs leading-relaxed overflow-hidden"
+          style={{
+            background: bubbleColor,
+            color: textColor,
+            borderRadius,
+            wordBreak: "break-word",
+          }}
+        >
+          {msg.imageUrl && (
+            <img
+              src={msg.imageUrl}
+              alt=""
+              style={{
+                maxWidth: "100%",
+                maxHeight: "120px",
+                borderRadius: "10px",
+                objectFit: "cover",
+                display: "block",
+                marginBottom: msg.text ? "6px" : 0,
+              }}
+            />
+          )}
+          {msg.text ||
+            (!msg.imageUrl && <span style={{ opacity: 0.4 }}>empty</span>)}
+        </div>
+      )}
       {isLastMe && isLast && settings.readReceipt !== "none" && (
         <span
           className="mt-0.5 mr-1"

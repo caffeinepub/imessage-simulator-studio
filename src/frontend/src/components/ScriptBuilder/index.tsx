@@ -9,9 +9,11 @@ import {
   Clock,
   Copy,
   GripVertical,
+  ImageIcon,
   Phone,
   Plus,
   Trash2,
+  X,
 } from "lucide-react";
 import { useRef, useState } from "react";
 import { type Message, useStudioStore } from "../../store/studioStore";
@@ -29,8 +31,14 @@ function MessageRow({
   onDragOver: (e: React.DragEvent, i: number) => void;
   onDrop: (i: number) => void;
 }) {
-  const { updateMessage, deleteMessage, duplicateMessage, toggleSender } =
-    useStudioStore();
+  const {
+    updateMessage,
+    deleteMessage,
+    duplicateMessage,
+    toggleSender,
+    updateMessageImage,
+  } = useStudioStore();
+  const imgInputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
 
   const isMe = msg.sender === "me";
@@ -132,6 +140,59 @@ function MessageRow({
         style={{ color: "oklch(var(--studio-text))", fontSize: "12px" }}
         data-ocid="script.input"
       />
+
+      {/* Image upload */}
+      {!isTimestamp && !isCall && (
+        <div className="flex items-center gap-1 flex-shrink-0">
+          {msg.imageUrl ? (
+            <button
+              type="button"
+              onClick={() => updateMessageImage(msg.id, null)}
+              className="relative flex-shrink-0 group/img"
+              title="Remove image"
+            >
+              <img
+                src={msg.imageUrl}
+                alt=""
+                className="w-6 h-6 rounded object-cover border border-white/20"
+              />
+              <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-red-500 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-opacity">
+                <X size={7} className="text-white" />
+              </span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => imgInputRef.current?.click()}
+              className="p-1 rounded hover:bg-white/10 transition-colors opacity-30 group-hover:opacity-70"
+              title="Add image"
+              data-ocid="script.upload_button"
+            >
+              <ImageIcon
+                size={11}
+                style={{ color: "oklch(var(--studio-muted))" }}
+              />
+            </button>
+          )}
+          <input
+            ref={imgInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (!file) return;
+              const reader = new FileReader();
+              reader.onload = (evt) => {
+                const dataUrl = evt.target?.result as string;
+                updateMessageImage(msg.id, dataUrl);
+              };
+              reader.readAsDataURL(file);
+              e.target.value = "";
+            }}
+          />
+        </div>
+      )}
 
       {/* Row actions */}
       <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
