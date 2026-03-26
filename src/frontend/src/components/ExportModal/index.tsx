@@ -132,6 +132,10 @@ export default function ExportModal() {
       let inputText = "";
       let activeKey = "";
 
+      // Preloaded images map (populated async)
+      const preloadedImages = new Map<string, HTMLImageElement>();
+      const IMG_H = 200; // canvas units for image in bubble
+
       // Preload all message images
       await Promise.all(
         messages
@@ -149,6 +153,20 @@ export default function ExportModal() {
               }),
           ),
       );
+
+      // Preload avatar image
+      let avatarImage: HTMLImageElement | null = null;
+      if (settings.avatarUrl) {
+        await new Promise<void>((resolve) => {
+          const img = new window.Image();
+          img.onload = () => {
+            avatarImage = img;
+            resolve();
+          };
+          img.onerror = () => resolve();
+          img.src = settings.avatarUrl!;
+        });
+      }
 
       const rr = (
         x: number,
@@ -181,10 +199,6 @@ export default function ExportModal() {
         if (line) lines.push(line);
         return lines.length ? lines : [""];
       };
-
-      // Preloaded images map (populated async)
-      const preloadedImages = new Map<string, HTMLImageElement>();
-      const IMG_H = 200; // canvas units for image in bubble
 
       const drawFrame = () => {
         const grad = ctx.createLinearGradient(0, 0, 0, CH);
@@ -251,19 +265,30 @@ export default function ExportModal() {
 
         const avX = SC_X + SC_W / 2;
         const avY = SC_Y + STATUS_H + HEADER_H / 2 - 22;
-        ctx.fillStyle = BLUE;
+
+        // Draw avatar circle
+        ctx.save();
         ctx.beginPath();
         ctx.arc(avX, avY, 38, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = "white";
-        ctx.font = '700 30px -apple-system, "SF Pro Text", sans-serif';
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(
-          settings.contactName.charAt(0).toUpperCase(),
-          avX,
-          avY + 1,
-        );
+        ctx.clip();
+        if (avatarImage) {
+          ctx.drawImage(avatarImage, avX - 38, avY - 38, 76, 76);
+        } else {
+          ctx.fillStyle = BLUE;
+          ctx.fill();
+          ctx.restore();
+          ctx.save();
+          ctx.fillStyle = "white";
+          ctx.font = '700 30px -apple-system, "SF Pro Text", sans-serif';
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(
+            settings.contactName.charAt(0).toUpperCase(),
+            avX,
+            avY + 1,
+          );
+        }
+        ctx.restore();
 
         ctx.fillStyle = TEXT_COLOR;
         ctx.font = '600 24px -apple-system, "SF Pro Text", sans-serif';
