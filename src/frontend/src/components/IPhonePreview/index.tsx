@@ -211,7 +211,7 @@ function IOSKeyboard({
       <div
         style={{
           display: "flex",
-          alignItems: "flex-end",
+          alignItems: "center",
           gap: 6,
           padding: "6px 10px",
           background: inputBarBg,
@@ -220,14 +220,8 @@ function IOSKeyboard({
           flexShrink: 0,
         }}
       >
-        <Camera
-          size={22}
-          style={{ color: "#0A84FF", flexShrink: 0, marginBottom: 1 }}
-        />
-        <Grid2x2
-          size={20}
-          style={{ color: "#0A84FF", flexShrink: 0, marginBottom: 1 }}
-        />
+        <Camera size={22} style={{ color: "#0A84FF", flexShrink: 0 }} />
+        <Grid2x2 size={20} style={{ color: "#0A84FF", flexShrink: 0 }} />
 
         {/* Multi-line input pill */}
         <div
@@ -240,7 +234,7 @@ function IOSKeyboard({
             background: darkMode ? "#2C2C2E" : "#FFFFFF",
             padding: "6px 10px",
             display: "flex",
-            alignItems: "flex-start",
+            alignItems: "center",
             overflow: "hidden",
           }}
         >
@@ -288,7 +282,6 @@ function IOSKeyboard({
             justifyContent: "center",
             flexShrink: 0,
             transition: "background 0.15s",
-            marginBottom: 1,
           }}
         >
           <ArrowUp
