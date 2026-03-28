@@ -1,9 +1,12 @@
 import { Toaster } from "@/components/ui/sonner";
-import { useEffect, useRef } from "react";
+import React from "react";
+import { useEffect, useRef, useState } from "react";
+import AdminPanel from "./components/AdminPanel";
 import IPhonePreview from "./components/IPhonePreview";
 import ScriptBuilder from "./components/ScriptBuilder";
 import SettingsPanel from "./components/SettingsPanel";
 import TopNav from "./components/TopNav";
+import { useActor } from "./hooks/useActor";
 import { useInternetIdentity } from "./hooks/useInternetIdentity";
 import { useStudioStore } from "./store/studioStore";
 
@@ -81,10 +84,12 @@ function LoginScreen() {
   );
 }
 
-export default function App() {
-  const { identity, isInitializing } = useInternetIdentity();
+function StudioApp() {
   const { saveProject } = useStudioStore();
+  const { actor, isFetching } = useActor();
   const autoSaveRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(false);
 
   useEffect(() => {
     autoSaveRef.current = setInterval(() => {
@@ -95,27 +100,25 @@ export default function App() {
     };
   }, [saveProject]);
 
-  if (isInitializing) {
-    return (
-      <div
-        className="min-h-screen flex items-center justify-center"
-        style={{ background: "oklch(var(--studio-bg))" }}
-      >
-        <span
-          className="text-sm animate-pulse"
-          style={{ color: "oklch(var(--studio-muted))" }}
-          data-ocid="app.loading_state"
-        >
-          Loading…
-        </span>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (!actor || isFetching) return;
+    // Auto-register this user silently on every login
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    actor.registerSelf().catch(() => {});
+    actor
+      .isCallerAdmin()
+      .then((result) => {
+        setIsAdmin(result);
+      })
+      .catch(() => {
+        setIsAdmin(false);
+      });
+  }, [actor, isFetching]);
 
-  if (!identity) {
+  if (showAdmin && isAdmin) {
     return (
       <>
-        <LoginScreen />
+        <AdminPanel onBack={() => setShowAdmin(false)} />
         <Toaster />
       </>
     );
@@ -126,7 +129,7 @@ export default function App() {
       className="min-h-screen flex flex-col"
       style={{ background: "oklch(var(--studio-bg))" }}
     >
-      <TopNav />
+      <TopNav isAdmin={isAdmin} onAdminClick={() => setShowAdmin(true)} />
       <main
         className="flex-1 flex overflow-hidden"
         style={{ height: "calc(100vh - 56px)" }}
@@ -158,5 +161,77 @@ export default function App() {
       </main>
       <Toaster />
     </div>
+  );
+}
+
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error?: Error }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div
+          className="min-h-screen flex items-center justify-center flex-col gap-4"
+          style={{ background: "#000" }}
+        >
+          <p style={{ color: "#fff" }}>
+            Something went wrong. Please refresh the page.
+          </p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            style={{ background: "#0a84ff", color: "white" }}
+            className="px-4 py-2 rounded-lg text-sm"
+          >
+            Refresh
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+export default function App() {
+  const { identity, isInitializing } = useInternetIdentity();
+
+  if (isInitializing) {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: "oklch(var(--studio-bg))" }}
+      >
+        <span
+          className="text-sm animate-pulse"
+          style={{ color: "oklch(var(--studio-muted))" }}
+          data-ocid="app.loading_state"
+        >
+          Loading…
+        </span>
+      </div>
+    );
+  }
+
+  if (!identity) {
+    return (
+      <>
+        <LoginScreen />
+        <Toaster />
+      </>
+    );
+  }
+
+  return (
+    <ErrorBoundary>
+      <StudioApp />
+    </ErrorBoundary>
   );
 }

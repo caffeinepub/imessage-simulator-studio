@@ -10,6 +10,7 @@ import {
   Play,
   RotateCcw,
   Save,
+  Shield,
   Square,
   Trash2,
 } from "lucide-react";
@@ -18,7 +19,12 @@ import { toast } from "sonner";
 import { useInternetIdentity } from "../hooks/useInternetIdentity";
 import { useStudioStore } from "../store/studioStore";
 
-export default function TopNav() {
+interface TopNavProps {
+  isAdmin?: boolean;
+  onAdminClick?: () => void;
+}
+
+export default function TopNav({ isAdmin, onAdminClick }: TopNavProps) {
   const {
     saveProject,
     getSavedProjects,
@@ -121,6 +127,22 @@ export default function TopNav() {
           >
             Sign out
           </button>
+          {isAdmin && (
+            <button
+              type="button"
+              className="studio-pill-btn flex items-center gap-1"
+              style={{
+                background: "oklch(var(--studio-blue) / 0.15)",
+                color: "oklch(var(--studio-blue))",
+                borderColor: "oklch(var(--studio-blue) / 0.3)",
+              }}
+              onClick={onAdminClick}
+              data-ocid="nav.link"
+            >
+              <Shield size={10} />
+              Admin
+            </button>
+          )}
         </div>
       </div>
 

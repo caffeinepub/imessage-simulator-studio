@@ -24,7 +24,15 @@ export const UserRole = IDL.Variant({
   'user' : IDL.Null,
   'guest' : IDL.Null,
 });
-export const UserProfile = IDL.Record({ 'name' : IDL.Text });
+export const UserProfile = IDL.Record({
+  'status' : IDL.Variant({ 'active' : IDL.Null, 'suspended' : IDL.Null }),
+  'name' : IDL.Text,
+});
+export const UserSummary = IDL.Record({
+  'principal' : IDL.Principal,
+  'role' : UserRole,
+  'profile' : UserProfile,
+});
 
 export const idlService = IDL.Service({
   '_caffeineStorageBlobIsLive' : IDL.Func(
@@ -54,6 +62,7 @@ export const idlService = IDL.Service({
     ),
   '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+  'addUser' : IDL.Func([IDL.Principal, IDL.Text, UserRole], [], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
   'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
@@ -63,7 +72,13 @@ export const idlService = IDL.Service({
       ['query'],
     ),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+  'listUsers' : IDL.Func([], [IDL.Vec(UserSummary)], ['query']),
+  'removeUser' : IDL.Func([IDL.Principal], [], []),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+  'registerSelf' : IDL.Func([], [], []),
+  'suspendUser' : IDL.Func([IDL.Principal], [], []),
+  'unsuspendUser' : IDL.Func([IDL.Principal], [], []),
+  'updateUser' : IDL.Func([IDL.Principal, IDL.Text, UserRole], [], []),
 });
 
 export const idlInitArgs = [];
@@ -85,7 +100,15 @@ export const idlFactory = ({ IDL }) => {
     'user' : IDL.Null,
     'guest' : IDL.Null,
   });
-  const UserProfile = IDL.Record({ 'name' : IDL.Text });
+  const UserProfile = IDL.Record({
+    'status' : IDL.Variant({ 'active' : IDL.Null, 'suspended' : IDL.Null }),
+    'name' : IDL.Text,
+  });
+  const UserSummary = IDL.Record({
+    'principal' : IDL.Principal,
+    'role' : UserRole,
+    'profile' : UserProfile,
+  });
   
   return IDL.Service({
     '_caffeineStorageBlobIsLive' : IDL.Func(
@@ -115,6 +138,7 @@ export const idlFactory = ({ IDL }) => {
       ),
     '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
+    'addUser' : IDL.Func([IDL.Principal, IDL.Text, UserRole], [], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'getCallerUserProfile' : IDL.Func([], [IDL.Opt(UserProfile)], ['query']),
     'getCallerUserRole' : IDL.Func([], [UserRole], ['query']),
@@ -124,7 +148,13 @@ export const idlFactory = ({ IDL }) => {
         ['query'],
       ),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+    'listUsers' : IDL.Func([], [IDL.Vec(UserSummary)], ['query']),
+    'removeUser' : IDL.Func([IDL.Principal], [], []),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
+    'registerSelf' : IDL.Func([], [], []),
+    'suspendUser' : IDL.Func([IDL.Principal], [], []),
+    'unsuspendUser' : IDL.Func([IDL.Principal], [], []),
+    'updateUser' : IDL.Func([IDL.Principal, IDL.Text, UserRole], [], []),
   });
 };
 

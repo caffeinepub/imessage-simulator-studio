@@ -24,24 +24,218 @@ export default function ExportModal() {
       setExporting(true);
       setExportType("image");
       setProgress(10);
-      const html2canvas = (await import("html2canvas")).default;
+
+      const dark = settings.darkMode;
+      const BUBBLE_ME = settings.greenBubbles ? "#30D158" : "#0A84FF";
+      const BUBBLE_THEM = dark ? "#3A3D44" : "#E9E9EB";
+      const TEXT_THEM = dark ? "#ffffff" : "#1C1C1E";
+      const BG = dark ? "#000000" : "#F2F2F7";
+
+      const CW = 1080;
+      const PAD = 48;
+      const MAX_W = CW * 0.72;
+      const IMG_W = CW * 0.3;
+      const PAD_H = 28;
+      const PAD_V = 20;
+      const LINE_H = 56;
+      const MSG_GAP = 20;
+      const SIDE = 32;
+      const MSG_FONT = '40px -apple-system, "SF Pro Text", sans-serif';
+      const MAX_IMG_H = 450;
+
+      // Measure canvas for text wrapping
+      const measureCanvas = document.createElement("canvas");
+      measureCanvas.width = CW;
+      measureCanvas.height = 100;
+      const mctx = measureCanvas.getContext("2d")!;
+
+      const wrapText2 = (
+        ctx2: CanvasRenderingContext2D,
+        text: string,
+        maxW: number,
+        font: string,
+      ): string[] => {
+        ctx2.font = font;
+        const words = text.split(" ");
+        const lines: string[] = [];
+        let line = "";
+        for (const word of words) {
+          const test = line ? `${line} ${word}` : word;
+          if (ctx2.measureText(test).width > maxW && line) {
+            lines.push(line);
+            line = word;
+          } else {
+            line = test;
+          }
+        }
+        if (line) lines.push(line);
+        return lines.length ? lines : [""];
+      };
+
+      // Preload images
+      const preloadedImages = new Map<string, HTMLImageElement>();
+      await Promise.all(
+        messages
+          .filter((m) => m.imageUrl)
+          .map(
+            (m) =>
+              new Promise<void>((resolve) => {
+                const img = new window.Image();
+                img.crossOrigin = "anonymous";
+                img.onload = () => {
+                  preloadedImages.set(m.id, img);
+                  resolve();
+                };
+                img.onerror = () => resolve();
+                img.src = m.imageUrl!;
+              }),
+          ),
+      );
+
       setProgress(40);
-      const frame = document.getElementById("iphone-frame");
-      if (!frame) throw new Error("iPhone frame not found");
-      const canvas = await html2canvas(frame, {
-        backgroundColor: null,
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-      });
+
+      const getImgH = (
+        imgEl: HTMLImageElement | undefined,
+        imgW: number,
+      ): number => {
+        if (!imgEl || imgEl.naturalWidth === 0) return 200;
+        const ratio = imgEl.naturalHeight / imgEl.naturalWidth;
+        return Math.min(Math.round(imgW * ratio), MAX_IMG_H);
+      };
+
+      const getMsgHeight = (msg: Message): number => {
+        if (msg.type === "timestamp") return 64 + MSG_GAP;
+        const hasImage = !!msg.imageUrl;
+        const hasText = !!msg.text;
+        const lines = hasText
+          ? wrapText2(mctx, msg.text, MAX_W - PAD_H * 2, MSG_FONT)
+          : [];
+        const textH = lines.length > 0 ? lines.length * LINE_H : 0;
+        if (hasImage) {
+          const imgH = getImgH(preloadedImages.get(msg.id), IMG_W);
+          return imgH + (hasText ? textH + PAD_V : 0) + PAD_V * 2 + MSG_GAP;
+        }
+        return (hasText ? lines.length : 1) * LINE_H + PAD_V * 2 + MSG_GAP;
+      };
+
+      const totalMsgH = messages.reduce((a, m) => a + getMsgHeight(m), 0);
+      const CH = totalMsgH + PAD * 2;
+
+      const canvas = document.createElement("canvas");
+      canvas.width = CW;
+      canvas.height = Math.max(CH, 200);
+      const ctx = canvas.getContext("2d")!;
+
+      // Background
+      ctx.fillStyle = BG;
+      ctx.fillRect(0, 0, CW, canvas.height);
+
+      const rr = (
+        x: number,
+        y: number,
+        w: number,
+        h: number,
+        r: number | number[],
+        fill: string,
+      ) => {
+        ctx.fillStyle = fill;
+        ctx.beginPath();
+        ctx.roundRect(x, y, w, h, r);
+        ctx.fill();
+      };
+
+      let y = PAD;
+
+      for (const msg of messages) {
+        if (msg.type === "timestamp") {
+          ctx.fillStyle = "#8E8E93";
+          ctx.font = '36px -apple-system, "SF Pro Text", sans-serif';
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(msg.text, CW / 2, y + 32);
+          y += getMsgHeight(msg);
+          continue;
+        }
+
+        const isMe = msg.sender === "me";
+        const color = isMe ? BUBBLE_ME : BUBBLE_THEM;
+        const tColor = isMe ? "white" : TEXT_THEM;
+        const hasImage = !!msg.imageUrl;
+        const hasText = !!msg.text;
+        const lines = hasText
+          ? wrapText2(ctx, msg.text, MAX_W - PAD_H * 2, MSG_FONT)
+          : [];
+        const bR = isMe ? [26, 26, 6, 26] : [26, 26, 26, 6];
+        const imgEl = preloadedImages.get(msg.id);
+        const imgH = getImgH(imgEl, IMG_W);
+        const msgH = getMsgHeight(msg);
+
+        if (hasImage && !hasText) {
+          const bX = isMe ? CW - SIDE - IMG_W : SIDE;
+          if (imgEl) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.roundRect(bX, y, IMG_W, imgH, bR);
+            ctx.clip();
+            ctx.drawImage(imgEl, bX, y, IMG_W, imgH);
+            ctx.restore();
+          } else {
+            rr(bX, y, IMG_W, imgH, bR, color);
+          }
+        } else {
+          ctx.font = MSG_FONT;
+          let maxLW = 0;
+          for (const l of lines) {
+            const w = ctx.measureText(l).width;
+            if (w > maxLW) maxLW = w;
+          }
+          const bW = hasImage ? IMG_W : Math.min(MAX_W, maxLW + PAD_H * 2);
+          const textH = lines.length * LINE_H;
+          const bH = hasImage
+            ? imgH + (hasText ? textH + PAD_V : 0) + PAD_V * 2
+            : textH + PAD_V * 2;
+          const bX = isMe ? CW - SIDE - bW : SIDE;
+
+          rr(bX, y, bW, bH, bR, color);
+
+          if (hasImage && imgEl) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.roundRect(bX, y, bW, imgH + PAD_V, [
+              bR[0] as number,
+              bR[1] as number,
+              0,
+              0,
+            ]);
+            ctx.clip();
+            ctx.drawImage(imgEl, bX, y, bW, imgH);
+            ctx.restore();
+          }
+
+          ctx.fillStyle = tColor;
+          ctx.font = MSG_FONT;
+          ctx.textAlign = "left";
+          ctx.textBaseline = "middle";
+          const textStartY = hasImage
+            ? y + imgH + PAD_V + LINE_H / 2
+            : y + PAD_V + LINE_H / 2;
+          lines.forEach((line, li) => {
+            ctx.fillText(line, bX + PAD_H, textStartY + li * LINE_H);
+          });
+        }
+
+        y += msgH;
+      }
+
       setProgress(80);
+
       const url = canvas.toDataURL("image/png");
       const a = document.createElement("a");
       a.href = url;
-      a.download = "imessage-screenshot.png";
+      a.download = "imessage-export.png";
       a.click();
       setProgress(100);
-      toast.success("Screenshot saved!");
+      toast.success("Image saved!");
     } catch (err) {
       console.error(err);
       toast.error("Export failed. Try again.");
@@ -50,7 +244,7 @@ export default function ExportModal() {
       setExportType(null);
       setProgress(0);
     }
-  }, []);
+  }, [messages, settings]);
 
   const handleExportVideo = useCallback(async () => {
     cancelRef.current = false;
@@ -134,7 +328,15 @@ export default function ExportModal() {
 
       // Preloaded images map (populated async)
       const preloadedImages = new Map<string, HTMLImageElement>();
-      const IMG_H = 200; // canvas units for image in bubble
+      const MAX_IMG_H = 288; // matches preview maxHeight: 120px at 2.4x scale
+      const getImgH = (
+        imgEl: HTMLImageElement | undefined,
+        imgW: number,
+      ): number => {
+        if (!imgEl || imgEl.naturalWidth === 0) return 200;
+        const ratio = imgEl.naturalHeight / imgEl.naturalWidth;
+        return Math.min(Math.round(imgW * ratio), MAX_IMG_H);
+      };
 
       // Preload all message images
       await Promise.all(
@@ -317,6 +519,7 @@ export default function ExportModal() {
 
         const MSG_FONT = '27px -apple-system, "SF Pro Text", sans-serif';
         const MAX_W = SC_W * 0.72;
+        const IMG_W = SC_W * 0.3; // 30% width for image bubbles
         const PAD_H = 26;
         const PAD_V = 18;
         const LINE_H = 36;
@@ -332,7 +535,8 @@ export default function ExportModal() {
             : [];
           const textH = lines.length > 0 ? lines.length * LINE_H : 0;
           if (hasImage) {
-            return IMG_H + (hasText ? textH + PAD_V : 0) + PAD_V * 2 + MSG_GAP;
+            const _imgH = getImgH(preloadedImages.get(msg.id), IMG_W);
+            return _imgH + (hasText ? textH + PAD_V : 0) + PAD_V * 2 + MSG_GAP;
           }
           return (hasText ? lines.length : 1) * LINE_H + PAD_V * 2 + MSG_GAP;
         });
@@ -346,7 +550,7 @@ export default function ExportModal() {
           MSG_TOP + MSG_H - totalH - PAD_BOTTOM,
         );
 
-        let y = msgStartY;
+        let yV = msgStartY;
 
         for (let mi = 0; mi < visibleMsgs.length; mi++) {
           const msg = visibleMsgs[mi];
@@ -356,8 +560,8 @@ export default function ExportModal() {
             ctx.font = '22px -apple-system, "SF Pro Text", sans-serif';
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
-            ctx.fillText(msg.text, SC_X + SC_W / 2, y + 20);
-            y += msgHeights[mi];
+            ctx.fillText(msg.text, SC_X + SC_W / 2, yV + 20);
+            yV += msgHeights[mi];
             continue;
           }
 
@@ -374,17 +578,18 @@ export default function ExportModal() {
           if (hasImage && !hasText) {
             // Image-only: draw image with rounded corners, no background
             const imgEl = preloadedImages.get(msg.id);
-            const imgW = MAX_W;
+            const imgW = IMG_W; // 30% width matches preview
+            const imgH = getImgH(imgEl, imgW);
             const bX = isMe ? SC_X + SC_W - SIDE - imgW : SC_X + SIDE;
             if (imgEl) {
               ctx.save();
               ctx.beginPath();
-              ctx.roundRect(bX, y, imgW, IMG_H, bR);
+              ctx.roundRect(bX, yV, imgW, imgH, bR);
               ctx.clip();
-              ctx.drawImage(imgEl, bX, y, imgW, IMG_H);
+              ctx.drawImage(imgEl, bX, yV, imgW, imgH);
               ctx.restore();
             } else {
-              rr(bX, y, imgW, IMG_H, bR, color);
+              rr(bX, yV, imgW, imgH, bR, color);
             }
           } else {
             ctx.font = MSG_FONT;
@@ -393,24 +598,27 @@ export default function ExportModal() {
               const w = ctx.measureText(l).width;
               if (w > maxLW) maxLW = w;
             }
-            const bW = hasImage ? MAX_W : Math.min(MAX_W, maxLW + PAD_H * 2);
-            const imgPartH = hasImage ? IMG_H + PAD_V : 0;
+            const bW = hasImage ? IMG_W : Math.min(MAX_W, maxLW + PAD_H * 2);
+            const _imgElForH = preloadedImages.get(msg.id);
+            const _computedImgH = getImgH(_imgElForH, bW);
+            const imgPartH = hasImage ? _computedImgH + PAD_V : 0;
             const textPartH =
               lines.length > 0 ? lines.length * LINE_H + PAD_V * 2 : PAD_V * 2;
             const bH = hasImage ? imgPartH + textPartH : textPartH;
             const bX = isMe ? SC_X + SC_W - SIDE - bW : SC_X + SIDE;
 
-            rr(bX, y, bW, bH, bR, color);
+            rr(bX, yV, bW, bH, bR, color);
 
             if (hasImage) {
               const imgEl = preloadedImages.get(msg.id);
               if (imgEl) {
+                const imgBubbleH = getImgH(imgEl, bW);
                 ctx.save();
                 ctx.beginPath();
                 const imgBR = isMe ? [18, 18, 0, 18] : [18, 18, 18, 0];
-                ctx.roundRect(bX, y, bW, IMG_H, imgBR);
+                ctx.roundRect(bX, yV, bW, imgBubbleH, imgBR);
                 ctx.clip();
-                ctx.drawImage(imgEl, bX, y, bW, IMG_H);
+                ctx.drawImage(imgEl, bX, yV, bW, imgBubbleH);
                 ctx.restore();
               }
             }
@@ -420,7 +628,7 @@ export default function ExportModal() {
               ctx.font = MSG_FONT;
               ctx.textAlign = "left";
               ctx.textBaseline = "alphabetic";
-              const textStartY = y + imgPartH + PAD_V;
+              const textStartY = yV + imgPartH + PAD_V;
               for (let li = 0; li < lines.length; li++) {
                 ctx.fillText(
                   lines[li],
@@ -431,13 +639,13 @@ export default function ExportModal() {
             }
           }
 
-          y += msgHeights[mi];
+          yV += msgHeights[mi];
         }
 
         if (showTypingDots) {
           const dotBW = 80;
           const dotBH = 50;
-          rr(SC_X + SIDE, y, dotBW, dotBH, [18, 18, 18, 4], BUBBLE_THEM);
+          rr(SC_X + SIDE, yV, dotBW, dotBH, [18, 18, 18, 4], BUBBLE_THEM);
           const phase = (Date.now() / 300) % (Math.PI * 2);
           for (let d = 0; d < 3; d++) {
             const bounce = Math.sin(phase + d * 1.2) * 6;
@@ -445,7 +653,7 @@ export default function ExportModal() {
             ctx.beginPath();
             ctx.arc(
               SC_X + SIDE + 16 + d * 24,
-              y + dotBH / 2 + bounce,
+              yV + dotBH / 2 + bounce,
               7,
               0,
               Math.PI * 2,
@@ -851,7 +1059,7 @@ export default function ExportModal() {
                 className="text-xs"
                 style={{ color: "oklch(var(--studio-muted))" }}
               >
-                PNG screenshot of the iPhone frame
+                PNG of all messages, clean layout
               </p>
             </div>
           </button>
@@ -894,7 +1102,7 @@ export default function ExportModal() {
                   style={{ color: "oklch(var(--studio-muted))" }}
                 >
                   {exportType === "image"
-                    ? "Capturing screenshot..."
+                    ? "Rendering messages..."
                     : "Rendering animated video..."}
                 </span>
                 <button

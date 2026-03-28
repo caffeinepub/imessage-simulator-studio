@@ -10,10 +10,19 @@ import type { ActorMethod } from '@icp-sdk/core/agent';
 import type { IDL } from '@icp-sdk/core/candid';
 import type { Principal } from '@icp-sdk/core/principal';
 
-export interface UserProfile { 'name' : string }
+export interface UserProfile {
+  'status' : { 'active' : null } |
+    { 'suspended' : null },
+  'name' : string,
+}
 export type UserRole = { 'admin' : null } |
   { 'user' : null } |
   { 'guest' : null };
+export interface UserSummary {
+  'principal' : Principal,
+  'role' : UserRole,
+  'profile' : UserProfile,
+}
 export interface _CaffeineStorageCreateCertificateResult {
   'method' : string,
   'blob_hash' : string,
@@ -42,12 +51,19 @@ export interface _SERVICE {
   >,
   '_caffeineStorageUpdateGatewayPrincipals' : ActorMethod<[], undefined>,
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
+  'addUser' : ActorMethod<[Principal, string, UserRole], undefined>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
   'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
+  'listUsers' : ActorMethod<[], Array<UserSummary>>,
+  'removeUser' : ActorMethod<[Principal], undefined>,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
+  'registerSelf' : ActorMethod<[], undefined>,
+  'suspendUser' : ActorMethod<[Principal], undefined>,
+  'unsuspendUser' : ActorMethod<[Principal], undefined>,
+  'updateUser' : ActorMethod<[Principal, string, UserRole], undefined>,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];
